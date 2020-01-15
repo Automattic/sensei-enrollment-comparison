@@ -1,0 +1,8 @@
+/vendor/
+/node_modules/
+.DS_Store
+/build/
+/assets/block-editor/build/
+.idea
+.env
+tests/e2e-tests/screenshots
