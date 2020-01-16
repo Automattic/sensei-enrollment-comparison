@@ -95,7 +95,56 @@ if ( ! defined( 'ABSPATH' ) ) {
 									 value="<?php esc_attr_e( 'Compare Enrollment', 'sensei-enrollment-comparison-tool' ); ?>">
 			</p>
 		</form>
+		<h2><?php esc_html_e( 'Manage Snapshots', 'sensei-enrollment-comparison-tool' ); ?></h2>
 		<?php
+		echo '<table class="wp-list-table widefat fixed striped" >';
+		echo '<thead>';
+		echo '<th>' . esc_html__( 'Date', 'sensei-enrollment-comparison-tool' ) . '</th>';
+		echo '<th>' . esc_html__( 'Snapshot', 'sensei-enrollment-comparison-tool' ) . '</th>';
+		echo '<th>' . esc_html__( 'Sensei Version', 'sensei-enrollment-comparison-tool' ) . '</th>';
+		echo '<th>' . esc_html__( 'WCPC Version', 'sensei-enrollment-comparison-tool' ) . '</th>';
+		echo '<th>' . esc_html__( 'Status', 'sensei-enrollment-comparison-tool' ) . '</th>';
+		echo '<th>' . esc_html__( 'Actions', 'sensei-enrollment-comparison-tool' ) . '</th>';
+		echo '</thead>';
+		echo '<tbody>';
+		foreach ( $snapshots as $id => $snapshot_data ) {
+			$snapshot = \Sensei\EnrollmentComparisonTool\Snapshots::get_snapshot( $id );
+			if ( ! $snapshot ) {
+				continue;
+			}
+
+			/**
+			 * @var \Sensei\EnrollmentComparisonTool\Snapshot $snapshot
+			 */
+			echo '<tr>';
+			echo '<td>' . $snapshot->get_friendly_date() . '</td>';
+			echo '<td>' . $snapshot->get_friendly_name() . '</td>';
+			echo '<td>' . $snapshot->get_sensei_version() . '</td>';
+			echo '<td>' . $snapshot->get_wcpc_version() . '</td>';
+			echo '<td>';
+			if ( $snapshot->is_valid() ) {
+				echo esc_html__( 'Success', 'sensei-enrollment-comparison-tool' );
+			} else {
+				$error = $snapshot->get_error();
+				if ( empty( $error ) ) {
+					$error = __( 'Unexpected state', 'sensei-enrollment-comparison-tool' );
+				}
+				echo '<span style="color: red">';
+				echo sprintf( esc_html__( 'Error: %s', 'sensei-enrollment-comparison-tool' ), esc_html( $error ) );
+				echo '</span>';
+			}
+			echo '</td>';
+
+			echo '<td>';
+			$delete_url = \wp_nonce_url( \admin_url( sprintf( 'admin.php?page=enrollment-comparison&sensei-enrollment-comp-action=delete&snapshot=%s', $snapshot->get_id() ) ), 'sensei-delete-snapshot' );
+			echo sprintf( '<a href="%1$s">%2$s</a>', $delete_url, esc_html__( 'Delete', 'sensei-enrollment-comparison-tool' ) );
+			echo '</td>';
+			echo '</tr>';
+		}
+		echo '</tbody>';
+		echo '</table>';
+		?>
+	<?php
 	}
 	?>
 </div>

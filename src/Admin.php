@@ -35,8 +35,8 @@ class Admin {
 	 * Outputs the main admin page.
 	 */
 	public function output_admin_page() {
-		if ( isset( $_POST['sensei-enrollment-comp-action'] ) ) {
-			switch ( $_POST['sensei-enrollment-comp-action'] ) {
+		if ( isset( $_REQUEST['sensei-enrollment-comp-action'] ) ) {
+			switch ( $_REQUEST['sensei-enrollment-comp-action'] ) {
 				case 'generate':
 					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Don't touch the nonce.
 					if ( empty( $_POST['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_POST['_wpnonce'] ), 'sensei-generate-snapshot' ) ) {
@@ -66,6 +66,26 @@ class Admin {
 					} else {
 						$diff = new Diff( $snapshot_a, $snapshot_b );
 						include __DIR__ . '/Views/diff.php';
+
+						return;
+					}
+					break;
+
+				case 'delete':
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Don't touch the nonce.
+					if ( ! isset( $_GET['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_GET['_wpnonce'] ), 'sensei-delete-snapshot' ) ) {
+						die( 'Invalid nonce.' );
+					}
+
+					if ( ! empty( $_GET['snapshot'] ) ) {
+						$snapshot = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_GET['snapshot'] ) ) );
+					}
+
+					if ( empty( $snapshot ) ) {
+						echo '<div class="notice inline notice-error"><p>' . \esc_html__( 'Snapshot may already have been deleted.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
+					} else {
+						Snapshots::delete( $snapshot );
+						\wp_safe_redirect( \admin_url( 'admin.php?page=enrollment-comparison' ) );
 
 						return;
 					}

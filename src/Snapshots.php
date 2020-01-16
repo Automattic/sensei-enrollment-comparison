@@ -32,6 +32,19 @@ class Snapshots {
 	}
 
 	/**
+	 * Delete a snapshot.
+	 *
+	 * @param Snapshot $snapshot
+	 */
+	public static function delete( Snapshot $snapshot ) {
+		$snapshot_ids = self::get_index();
+		unset( $snapshot_ids[ $snapshot->get_id() ] );
+
+		\update_option( self::SNAPSHOTS_INDEX, wp_json_encode( $snapshot_ids ), false );
+		\delete_option( self::SNAPSHOTS_PREFIX . $snapshot->get_id() );
+	}
+
+	/**
 	 * Get the snapshot descriptors.
 	 *
 	 * @param bool $only_valid
