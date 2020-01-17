@@ -21,6 +21,7 @@ class Admin {
 	 */
 	public function init() {
 		add_action( 'admin_menu', [ $this, 'add_menu_pages' ], 100 );
+		add_action( 'admin_init', [ $this, 'handle_actions' ] );
 	}
 
 	/**
@@ -32,9 +33,9 @@ class Admin {
 	}
 
 	/**
-	 * Outputs the main admin page.
+	 * Handle the admin page actions.
 	 */
-	public function output_admin_page() {
+	public function handle_actions() {
 		if ( isset( $_REQUEST['sensei-enrollment-comp-action'] ) ) {
 			switch ( $_REQUEST['sensei-enrollment-comp-action'] ) {
 				case 'generate':
@@ -47,9 +48,39 @@ class Admin {
 					if ( Generate::instance()->start_snapshot( $friendly_name ) ) {
 						\wp_safe_redirect( \admin_url( 'admin.php?page=enrollment-comparison' ) );
 					} else {
-						echo '<div class="notice inline notice-error"><p>' . \esc_html__( 'Unable to start generation snapshot. A snapshot may have already been started.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
+						echo '<div class="notice notice-error"><p>' . \esc_html__( 'Unable to start generation snapshot. A snapshot may have already been started.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
 					}
 					break;
+
+				case 'delete':
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Don't touch the nonce.
+					if ( ! isset( $_GET['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_GET['_wpnonce'] ), 'sensei-delete-snapshot' ) ) {
+						die( 'Invalid nonce.' );
+					}
+
+					if ( ! empty( $_GET['snapshot'] ) ) {
+						$snapshot = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_GET['snapshot'] ) ) );
+					}
+
+					if ( empty( $snapshot ) ) {
+						echo '<div class="notice notice-error"><p>' . \esc_html__( 'Snapshot may already have been deleted.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
+					} else {
+						Snapshots::delete( $snapshot );
+						\wp_safe_redirect( \admin_url( 'admin.php?page=enrollment-comparison' ) );
+
+						return;
+					}
+					break;
+			}
+		}
+	}
+
+	/**
+	 * Outputs the main admin page.
+	 */
+	public function output_admin_page() {
+		if ( isset( $_REQUEST['sensei-enrollment-comp-action'] ) ) {
+			switch ( $_REQUEST['sensei-enrollment-comp-action'] ) {
 				case 'compare':
 					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Don't touch the nonce.
 					if ( ! isset( $_POST['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_POST['_wpnonce'] ), 'sensei-compare-snapshots' ) ) {
@@ -70,28 +101,9 @@ class Admin {
 						return;
 					}
 					break;
-
-				case 'delete':
-					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Don't touch the nonce.
-					if ( ! isset( $_GET['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_GET['_wpnonce'] ), 'sensei-delete-snapshot' ) ) {
-						die( 'Invalid nonce.' );
-					}
-
-					if ( ! empty( $_GET['snapshot'] ) ) {
-						$snapshot = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_GET['snapshot'] ) ) );
-					}
-
-					if ( empty( $snapshot ) ) {
-						echo '<div class="notice inline notice-error"><p>' . \esc_html__( 'Snapshot may already have been deleted.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
-					} else {
-						Snapshots::delete( $snapshot );
-						\wp_safe_redirect( \admin_url( 'admin.php?page=enrollment-comparison' ) );
-
-						return;
-					}
-					break;
 			}
 		}
+
 		include __DIR__ . '/Views/admin.php';
 	}
 }
