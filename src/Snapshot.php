@@ -7,8 +7,6 @@
 
 namespace Sensei\EnrollmentComparisonTool;
 
-use Sensei\EnrollmentComparisonTool\Traits\Singleton;
-
 /**
  * Snapshot of enrollment results..
  */
@@ -127,15 +125,15 @@ class Snapshot implements \JsonSerializable {
 		$values_raw = json_decode( $json_string, true );
 
 		$values = [
-			'id'             => isset( $values_raw['id'] ) ? sanitize_text_field( $values_raw['id'] ) : null,
+			'id'             => isset( $values_raw['id'] ) ? \sanitize_text_field( $values_raw['id'] ) : null,
 			'start_time'     => isset( $values_raw['start_time'] ) ? floatval( $values_raw['start_time'] ) : null,
 			'end_time'       => isset( $values_raw['end_time'] ) ? floatval( $values_raw['end_time'] ) : null,
-			'stage'          => isset( $values_raw['stage'] ) ? sanitize_text_field( $values_raw['stage'] ) : null,
+			'stage'          => isset( $values_raw['stage'] ) ? \sanitize_text_field( $values_raw['stage'] ) : null,
 			'results'        => isset( $values_raw['results'] ) ? $values_raw['results'] : [],
-			'error'          => isset( $values_raw['error'] ) ? sanitize_text_field( $values_raw['error'] ) : false,
-			'friendly_name'  => isset( $values_raw['friendly_name'] ) ? sanitize_text_field( $values_raw['friendly_name'] ) : null,
-			'sensei_version' => isset( $values_raw['sensei_version'] ) ? sanitize_text_field( $values_raw['sensei_version'] ) : null,
-			'wcpc_version'   => isset( $values_raw['wcpc_version'] ) ? sanitize_text_field( $values_raw['wcpc_version'] ) : null,
+			'error'          => isset( $values_raw['error'] ) ? \sanitize_text_field( $values_raw['error'] ) : false,
+			'friendly_name'  => isset( $values_raw['friendly_name'] ) ? \sanitize_text_field( $values_raw['friendly_name'] ) : null,
+			'sensei_version' => isset( $values_raw['sensei_version'] ) ? \sanitize_text_field( $values_raw['sensei_version'] ) : null,
+			'wcpc_version'   => isset( $values_raw['wcpc_version'] ) ? \sanitize_text_field( $values_raw['wcpc_version'] ) : null,
 			'total_courses'  => isset( $values_raw['total_courses'] ) ? intval( $values_raw['total_courses'] ) : null,
 		];
 
@@ -191,7 +189,7 @@ class Snapshot implements \JsonSerializable {
 	 * @param int $total_courses
 	 */
 	public function init( $total_courses = 0 ) {
-		$this->sensei_version = Sensei()->version;
+		$this->sensei_version = \Sensei()->version;
 		$this->wcpc_version   = defined( 'SENSEI_WC_PAID_COURSES_VERSION' ) ? SENSEI_WC_PAID_COURSES_VERSION : null;
 		$this->stage          = 'process';
 		$this->total_courses  = intval( $total_courses );
@@ -205,10 +203,10 @@ class Snapshot implements \JsonSerializable {
 	 */
 	public static function default_friendly_name() {
 		if ( function_exists( '\Sensei' ) && '3.' === substr( \Sensei()->version, 0, 2 ) ) {
-			return esc_html__( 'After Sensei v3.0 Migration', 'sensei-enrollment-comparison-tool' );
+			return \esc_html__( 'After Sensei v3.0 Migration', 'sensei-enrollment-comparison-tool' );
 		}
 
-		return esc_html__( 'Before Sensei v3.0 Migration', 'sensei-enrollment-comparison-tool' );
+		return \esc_html__( 'Before Sensei v3.0 Migration', 'sensei-enrollment-comparison-tool' );
 	}
 
 	/**
@@ -323,7 +321,13 @@ class Snapshot implements \JsonSerializable {
 	 * @return string
 	 */
 	public function get_friendly_date() {
-		return wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), round( $this->get_start_time() ) );
+		$date_format = \get_option( 'date_format' ) . ' ' . \get_option( 'time_format' );
+
+		if ( function_exists( 'wp_date' ) ) {
+			return \wp_date( $date_format, round( $this->get_start_time() ) );
+		}
+
+		return gmdate( $date_format, round( $this->get_start_time() ) );
 	}
 
 	/**
