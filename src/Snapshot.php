@@ -75,6 +75,13 @@ class Snapshot implements \JsonSerializable {
 	private $results = [];
 
 	/**
+	 * Provider details.
+	 *
+	 * @var array
+	 */
+	private $providers = [];
+
+	/**
 	 * Error message.
 	 *
 	 * @var string|bool
@@ -130,6 +137,7 @@ class Snapshot implements \JsonSerializable {
 			'end_time'       => isset( $values_raw['end_time'] ) ? floatval( $values_raw['end_time'] ) : null,
 			'stage'          => isset( $values_raw['stage'] ) ? \sanitize_text_field( $values_raw['stage'] ) : null,
 			'results'        => isset( $values_raw['results'] ) ? $values_raw['results'] : [],
+			'providers'      => isset( $values_raw['providers'] ) ? $values_raw['providers'] : [],
 			'error'          => isset( $values_raw['error'] ) ? \sanitize_text_field( $values_raw['error'] ) : false,
 			'friendly_name'  => isset( $values_raw['friendly_name'] ) ? \sanitize_text_field( $values_raw['friendly_name'] ) : null,
 			'sensei_version' => isset( $values_raw['sensei_version'] ) ? \sanitize_text_field( $values_raw['sensei_version'] ) : null,
@@ -157,6 +165,35 @@ class Snapshot implements \JsonSerializable {
 	}
 
 	/**
+	 * Get the providers the student is enrolled with (if any).
+	 *
+	 * @param int $course_id
+	 * @param int $user_id
+	 *
+	 * @return string[]
+	 */
+	public function get_enrolling_providers( $course_id, $user_id ) {
+		if ( ! isset( $this->providers[ $course_id ] ) || ! isset( $this->providers[ $course_id ][ $user_id ] ) ) {
+			return [];
+		}
+
+		$provider_ids = $this->providers[ $course_id ][ $user_id ];
+		$providers    = [];
+		foreach ( $provider_ids as $provider_id ) {
+			$provider_label            = ucwords( str_replace( 'wc-', 'WooCommerce ', $provider_id ) );
+			if ( class_exists( 'Sensei_Course_Enrolment_Manager' ) ) {
+				$provider = \Sensei_Course_Enrolment_Manager::instance()->get_enrolment_provider_by_id( $provider_id );
+				if ( $provider ) {
+					$provider_label = $provider->get_name();
+				}
+			}
+			$providers[ $provider_id ] = $provider_label;
+		}
+
+		return $providers;
+	}
+
+	/**
 	 * Serialize object into array for JSON.
 	 *
 	 * @return array|mixed
@@ -168,6 +205,7 @@ class Snapshot implements \JsonSerializable {
 			'end_time',
 			'stage',
 			'results',
+			'providers',
 			'error',
 			'sensei_version',
 			'wcpc_version',
@@ -286,6 +324,16 @@ class Snapshot implements \JsonSerializable {
 	 */
 	public function add_course_student_list( $course_id, $student_ids ) {
 		$this->results[ $course_id ] = $student_ids;
+	}
+
+	/**
+	 * Add the enrollment providers providing enrolment.
+	 *
+	 * @param int        $course_id
+	 * @param string[][] $providers
+	 */
+	public function add_course_providing_details( $course_id, $providers ) {
+		$this->providers[ $course_id ] = $providers;
 	}
 
 	/**

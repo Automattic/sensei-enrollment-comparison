@@ -11,6 +11,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+$describe_providers = function( $providers ) {
+	if ( empty( $providers ) ) {
+		return;
+	}
+
+	$styles = [ 'font-size: small' ];
+	if ( count( $providers ) > 1 ) {
+		$styles[] = 'font-weight: bold';
+		$styles[] = 'color: orange';
+	}
+	echo ' <span style="' . esc_attr( implode( '; ', $styles ) ) . '" title="' . esc_attr( implode( '; ', $providers ) ) . '">(';
+	echo esc_html( sprintf( _n( '%s provider', '%s providers', count( $providers ), 'sensei-enrollment-comparison-tool' ), count( $providers ) ) );
+	echo ')</span>';
+};
+
 foreach ( $diff->get_notices() as $notice ) {
 	echo '<div class="notice inline notice-warning"><p>' . esc_html( $notice ) . '</p></div>';
 }
@@ -50,6 +65,9 @@ foreach ( $diff->get_notices() as $notice ) {
 				} else {
 					echo esc_html__( 'Not Enrolled', 'sensei-enrollment-comparison-tool' );
 				}
+				if ( isset( $data['a_providers'] ) ) {
+					$describe_providers( $data['a_providers' ] );
+				}
 				echo '</td>';
 
 				echo '<td style="' . esc_attr( $row_style ) . '">';
@@ -57,6 +75,9 @@ foreach ( $diff->get_notices() as $notice ) {
 					echo esc_html__( 'Enrolled', 'sensei-enrollment-comparison-tool' );
 				} else {
 					echo esc_html__( 'Not Enrolled', 'sensei-enrollment-comparison-tool' );
+				}
+				if ( isset( $data['b_providers'] ) ) {
+					$describe_providers( $data['b_providers' ] );
 				}
 				echo '</td>';
 				echo '</tr>';

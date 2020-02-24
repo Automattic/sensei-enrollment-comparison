@@ -100,9 +100,11 @@ class Diff {
 		$same = true;
 		foreach ( $course_users as $user_id => $user_label ) {
 			$enrollment[ $user_id ]         = [
-				'label' => $user_label,
-				'a'     => $this->a->is_enrolled( $course_id, $user_id ),
-				'b'     => $this->b->is_enrolled( $course_id, $user_id ),
+				'label'       => $user_label,
+				'a'           => $this->a->is_enrolled( $course_id, $user_id ),
+				'a_providers' => $this->a->get_enrolling_providers( $course_id, $user_id ),
+				'b'           => $this->b->is_enrolled( $course_id, $user_id ),
+				'b_providers' => $this->b->get_enrolling_providers( $course_id, $user_id ),
 			];
 			$enrollment[ $user_id ]['same'] = $enrollment[ $user_id ]['a'] === $enrollment[ $user_id ]['b'];
 			if ( ! $enrollment[ $user_id ]['same'] ) {

@@ -84,7 +84,12 @@ class Generate {
 		$query      = new \WP_Query( $query_args );
 
 		foreach ( $query->get_posts() as $post ) {
-			$snapshot->add_course_student_list( $post->ID, $this->get_students( $post->ID ) );
+			$student_results = $this->get_student_results( $post->ID );
+
+			$snapshot->add_course_student_list( $post->ID, $student_results['students'] );
+			if ( ! empty( $student_results['details'] ) ) {
+				$snapshot->add_course_providing_details( $post->ID, $student_results['details'] );
+			}
 		}
 
 		if ( empty( $query->post_count ) || $snapshot->get_course_offset() >= $snapshot->get_total_courses() ) {
@@ -117,17 +122,28 @@ class Generate {
 	 *
 	 * @return array
 	 */
-	private function get_students( $course_id ) {
+	private function get_student_results( $course_id ) {
+		$details  = [];
 		$students = [];
 		foreach ( $this->get_all_users() as $user ) {
 			if ( $this->is_student_enrolled( $course_id, $user->ID ) ) {
 				$students[] = $user->ID;
+
+				if ( $this->is_sensei_3() ) {
+					$student_details = $this->get_enrolment_providers( $course_id, $user->ID );
+					if ( ! empty( $student_details ) ) {
+						$details[ $user->ID ] = $student_details;
+					}
+				}
 			}
 		}
 
 		sort( $students );
 
-		return $students;
+		return [
+			'students' => $students,
+			'details'  => $details,
+		];
 	}
 
 	/**
@@ -144,6 +160,37 @@ class Generate {
 		}
 
 		return \Sensei_Utils::user_started_course( $course_id, $user_id );
+	}
+
+	/**
+	 * Get the enrolment provider IDs providing enrolment for a student.
+	 *
+	 * @param int $course_id
+	 * @param int $user_id
+	 *
+	 * @return string[]
+	 */
+	private function get_enrolment_providers( $course_id, $user_id ) {
+		if ( ! $this->is_sensei_3() ) {
+			return [];
+		}
+
+		$course_enrolment = \Sensei_Course_Enrolment::get_course_instance( $course_id );
+
+		$provider_results = $course_enrolment->get_enrolment_check_results( $user_id );
+		if ( ! $provider_results ) {
+			return [];
+		}
+
+		$providers = [];
+
+		foreach ( $provider_results->get_provider_results() as $provider_id => $result ) {
+			if ( $result ) {
+				$providers[] = $provider_id;
+			}
+		}
+
+		return $providers;
 	}
 
 	/**
