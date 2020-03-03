@@ -159,7 +159,22 @@ class Generate {
 			return \Sensei_Course::is_user_enrolled( $course_id, $user_id );
 		}
 
-		return \Sensei_Utils::user_started_course( $course_id, $user_id );
+		$current_user_id = get_current_user_id();
+
+		// WCPC's legacy subscription checking behavior assumed we were logged in as this user.
+		wp_set_current_user( $user_id );
+
+		if ( class_exists( 'Sensei_WC_Subscriptions' ) && \Sensei_WC_Subscriptions::is_wc_subscriptions_active() ) {
+			// WCPC 2.x can remove this filter and not add it back again.
+			add_filter( 'sensei_user_started_course', [ 'Sensei_WC_Subscriptions', 'get_subscription_user_started_course' ], 10, 3 );
+		}
+
+		// We're dealing with legacy behavior.
+		$is_student_enrolled = \Sensei_Utils::user_started_course( $course_id, $user_id );
+
+		wp_set_current_user( $current_user_id );
+
+		return $is_student_enrolled;
 	}
 
 	/**
