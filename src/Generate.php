@@ -299,13 +299,8 @@ class Generate {
 			return new \WP_Error( 'no-sensei', esc_html__( 'Sensei LMS must be activated.', 'sensei-enrollment-comparison-tool' ) );
 		}
 
-		// This is not compatible with Sensei 1.
-		if ( $this->is_sensei_1() ) {
-			return new \WP_Error( 'sensei-1', esc_html__( 'Sensei v1 is not compatible with this plugin.', 'sensei-enrollment-comparison-tool' ) );
-		}
-
 		// If Sensei and WCPC are activated, their versions need to be in-sync with the compatible versions.
-		if ( ! $this->is_sensei_2() && ! $this->is_sensei_3() ) {
+		if ( ! $this->is_sensei_1() && ! $this->is_sensei_2() && ! $this->is_sensei_3() ) {
 			return new \WP_Error( 'sensei-1', esc_html__( 'If you have WooCommerce Paid Courses (WCPC) activated, Sensei v3 must be installed WCPC v2 and Sensei v2 must be installed with WCPC v1.', 'sensei-enrollment-comparison-tool' ) );
 		}
 
