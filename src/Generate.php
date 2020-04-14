@@ -73,9 +73,8 @@ class Generate {
 	 * Handle the snapshot processing.
 	 *
 	 * @param Snapshot $snapshot
-	 * @param bool     $trust_cache
 	 */
-	private function process_snapshot( Snapshot $snapshot, $trust_cache = false ) {
+	private function process_snapshot( Snapshot $snapshot ) {
 		$query_args = [
 			'post_type'      => 'course',
 			'post_status'    => 'publish',
@@ -85,7 +84,7 @@ class Generate {
 		$query      = new \WP_Query( $query_args );
 
 		foreach ( $query->get_posts() as $post ) {
-			$student_results = $this->get_student_results( $post->ID, $trust_cache );
+			$student_results = $this->get_student_results( $post->ID, $snapshot->get_trust_cache() );
 
 			$snapshot->add_course_student_list( $post->ID, $student_results['students'] );
 			if ( ! empty( $student_results['details'] ) ) {
@@ -160,12 +159,12 @@ class Generate {
 	private function is_student_enrolled( $course_id, $user_id, $trust_cache = false ) {
 		if ( $this->is_sensei_3() ) {
 			if ( $trust_cache ) {
-				$term        = Sensei_Learner::get_learner_term( $user_id );
-				$is_enrolled = has_term( $term->term_id, Sensei_PostTypes::LEARNER_TAXONOMY_NAME, $this->course_id );
+				$term        = \Sensei_Learner::get_learner_term( $user_id );
+				$is_enrolled = has_term( $term->term_id, \Sensei_PostTypes::LEARNER_TAXONOMY_NAME, $course_id );
 			} else {
 				add_filter( 'sensei_course_enrolment_store_results', [ \Sensei_Course_Enrolment::class, 'do_not_store_negative_enrolment_results' ], 10, 5 );
 				$is_enrolled = \Sensei_Course::is_user_enrolled( $course_id, $user_id );
-				remove_filter( 'sensei_course_enrolment_store_results', [ \Sensei_Course_Enrolment::class, 'do_not_store_negative_enrolment_results' ], 10, 5 );
+				remove_filter( 'sensei_course_enrolment_store_results', [ \Sensei_Course_Enrolment::class, 'do_not_store_negative_enrolment_results' ], 10 );
 			}
 
 			return $is_enrolled;

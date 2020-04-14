@@ -30,7 +30,7 @@ class Snapshot implements \JsonSerializable {
 	 *
 	 * @var bool
 	 */
-	private $trust_cache;
+	private $trust_cache = false;
 
 	/**
 	 * Friendly name given during creation.
@@ -309,6 +309,15 @@ class Snapshot implements \JsonSerializable {
 	 */
 	public function get_end_time() {
 		return $this->end_time;
+	}
+
+	/**
+	 * Get if we should trust the cache on this build.
+	 *
+	 * @return bool
+	 */
+	public function get_trust_cache() {
+		return (bool) $this->trust_cache;
 	}
 
 	/**
