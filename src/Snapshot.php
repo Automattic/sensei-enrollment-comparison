@@ -26,6 +26,13 @@ class Snapshot implements \JsonSerializable {
 	private $stage;
 
 	/**
+	 * Whether or not we trusted the cache when generating the snapshot.
+	 *
+	 * @var bool
+	 */
+	private $trust_cache;
+
+	/**
 	 * Friendly name given during creation.
 	 *
 	 * @var string
@@ -103,10 +110,11 @@ class Snapshot implements \JsonSerializable {
 	 * Start the snapshot.
 	 *
 	 * @param null|string $friendly_name
+	 * @param bool        $trust_cache
 	 *
 	 * @return Snapshot
 	 */
-	public static function start( $friendly_name = null ) {
+	public static function start( $friendly_name = null, $trust_cache = false ) {
 		if ( empty( $friendly_name ) ) {
 			$friendly_name = self::default_friendly_name();
 		}
@@ -116,6 +124,7 @@ class Snapshot implements \JsonSerializable {
 			'friendly_name' => $friendly_name,
 			'start_time'    => microtime( true ),
 			'stage'         => 'init',
+			'trust_cache'   => $trust_cache,
 		];
 
 		return new self( $initial_values );
@@ -139,6 +148,7 @@ class Snapshot implements \JsonSerializable {
 			'results'        => isset( $values_raw['results'] ) ? $values_raw['results'] : [],
 			'providers'      => isset( $values_raw['providers'] ) ? $values_raw['providers'] : [],
 			'error'          => isset( $values_raw['error'] ) ? \sanitize_text_field( $values_raw['error'] ) : false,
+			'trust_cache'    => isset( $values_raw['trust_cache'] ) ? boolval( $values_raw['trust_cache'] ) : false,
 			'friendly_name'  => isset( $values_raw['friendly_name'] ) ? \sanitize_text_field( $values_raw['friendly_name'] ) : null,
 			'sensei_version' => isset( $values_raw['sensei_version'] ) ? \sanitize_text_field( $values_raw['sensei_version'] ) : null,
 			'wcpc_version'   => isset( $values_raw['wcpc_version'] ) ? \sanitize_text_field( $values_raw['wcpc_version'] ) : null,
@@ -211,6 +221,7 @@ class Snapshot implements \JsonSerializable {
 			'wcpc_version',
 			'total_courses',
 			'friendly_name',
+			'trust_cache',
 		];
 
 		$arr = [];

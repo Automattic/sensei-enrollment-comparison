@@ -43,6 +43,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<input type="text" id="friendly_name" size="100" name="friendly_name" placeholder="<?php echo \Sensei\EnrollmentComparisonTool\Snapshot::default_friendly_name(); ?>"/>
 				</p>
 			</fieldset>
+			<?php
+			if ( $generate->is_sensei_3() ) {
+				?>
+				<fieldset>
+					<p>
+						<input type="checkbox" id="trust_cache" name="trust_cache" />
+						<label for="trust_cache"><?php esc_html_e( 'Trust Enrollment Cache', 'sensei-enrollment-comparison-tool' ); ?></label>
+					</p>
+				</fieldset>
+			<?php
+			}
+			?>
+
 			<p class="submit"><input type="submit" name="generate" id="generate" class="button button-primary" value="<?php esc_attr_e( 'Generate Snapshot', 'sensei-enrollment-comparison-tool' ); ?>"></p>
 		</form>
 		<?php

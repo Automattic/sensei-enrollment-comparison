@@ -73,8 +73,9 @@ class Generate {
 	 * Handle the snapshot processing.
 	 *
 	 * @param Snapshot $snapshot
+	 * @param bool     $trust_cache
 	 */
-	private function process_snapshot( Snapshot $snapshot ) {
+	private function process_snapshot( Snapshot $snapshot, $trust_cache = false ) {
 		$query_args = [
 			'post_type'      => 'course',
 			'post_status'    => 'publish',
@@ -84,7 +85,7 @@ class Generate {
 		$query      = new \WP_Query( $query_args );
 
 		foreach ( $query->get_posts() as $post ) {
-			$student_results = $this->get_student_results( $post->ID );
+			$student_results = $this->get_student_results( $post->ID, $trust_cache );
 
 			$snapshot->add_course_student_list( $post->ID, $student_results['students'] );
 			if ( ! empty( $student_results['details'] ) ) {
@@ -118,15 +119,16 @@ class Generate {
 	/**
 	 * Get all the students enrolled in a course.
 	 *
-	 * @param int $course_id
+	 * @param int  $course_id
+	 * @param bool $trust_cache
 	 *
 	 * @return array
 	 */
-	private function get_student_results( $course_id ) {
+	private function get_student_results( $course_id, $trust_cache = false ) {
 		$details  = [];
 		$students = [];
 		foreach ( $this->get_all_users() as $user ) {
-			if ( $this->is_student_enrolled( $course_id, $user->ID ) ) {
+			if ( $this->is_student_enrolled( $course_id, $user->ID, $trust_cache ) ) {
 				$students[] = $user->ID;
 
 				if ( $this->is_sensei_3() ) {
@@ -149,14 +151,22 @@ class Generate {
 	/**
 	 * Check if student is enrolled.
 	 *
-	 * @param int $course_id
-	 * @param int $user_id
+	 * @param int  $course_id
+	 * @param int  $user_id
+	 * @param bool $trust_cache
 	 *
 	 * @return bool
 	 */
-	private function is_student_enrolled( $course_id, $user_id ) {
+	private function is_student_enrolled( $course_id, $user_id, $trust_cache = false ) {
 		if ( $this->is_sensei_3() ) {
-			return \Sensei_Course::is_user_enrolled( $course_id, $user_id );
+			if ( $trust_cache ) {
+				$term        = Sensei_Learner::get_learner_term( $user_id );
+				$is_enrolled = has_term( $term->term_id, Sensei_PostTypes::LEARNER_TAXONOMY_NAME, $this->course_id );
+			} else {
+				$is_enrolled = \Sensei_Course::is_user_enrolled( $course_id, $user_id );
+			}
+
+			return $is_enrolled;
 		}
 
 		$current_user_id = get_current_user_id();
@@ -239,15 +249,16 @@ class Generate {
 	 * Start a new snapshot.
 	 *
 	 * @param string|null $friendly_name
+	 * @param bool        $trust_cache
 	 *
 	 * @return bool
 	 */
-	public function start_snapshot( $friendly_name = null ) {
+	public function start_snapshot( $friendly_name = null, $trust_cache = false ) {
 		if ( $this->get_active_generation() ) {
 			return false;
 		}
 
-		$transient_result = $this->update_snapshot( Snapshot::start( $friendly_name ) );
+		$transient_result = $this->update_snapshot( Snapshot::start( $friendly_name, $trust_cache ) );
 
 		return $transient_result && $this->ensure_scheduled_job();
 	}

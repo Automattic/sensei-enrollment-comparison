@@ -45,7 +45,11 @@ class Admin {
 					}
 
 					$friendly_name = ! empty( $_POST['friendly_name'] ) ? sanitize_text_field( wp_unslash( $_POST['friendly_name'] ) ) : null;
-					if ( Generate::instance()->start_snapshot( $friendly_name ) ) {
+					$trust_cache   = false;
+					if ( Generate::instance()->is_sensei_3() && ! empty( $_POST['trust_cache'] ) ) {
+						$trust_cache = true;
+					}
+					if ( Generate::instance()->start_snapshot( $friendly_name, $trust_cache ) ) {
 						\wp_safe_redirect( \admin_url( 'admin.php?page=enrollment-comparison' ) );
 					} else {
 						echo '<div class="notice notice-error"><p>' . \esc_html__( 'Unable to start generation snapshot. A snapshot may have already been started.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
