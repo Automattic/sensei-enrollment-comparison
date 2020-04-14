@@ -163,7 +163,9 @@ class Generate {
 				$term        = Sensei_Learner::get_learner_term( $user_id );
 				$is_enrolled = has_term( $term->term_id, Sensei_PostTypes::LEARNER_TAXONOMY_NAME, $this->course_id );
 			} else {
+				add_filter( 'sensei_course_enrolment_store_results', [ \Sensei_Course_Enrolment::class, 'do_not_store_negative_enrolment_results' ], 10, 5 );
 				$is_enrolled = \Sensei_Course::is_user_enrolled( $course_id, $user_id );
+				remove_filter( 'sensei_course_enrolment_store_results', [ \Sensei_Course_Enrolment::class, 'do_not_store_negative_enrolment_results' ], 10, 5 );
 			}
 
 			return $is_enrolled;
