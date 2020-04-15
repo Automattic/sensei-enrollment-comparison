@@ -47,6 +47,9 @@ foreach ( $diff->get_notices() as $notice ) {
 			echo '<th>' . esc_html__( 'Student', 'sensei-enrollment-comparison-tool' ) . '</th>';
 			echo '<th title="' . esc_attr( $diff->get_a()->get_descriptor() ) . '">' . esc_html__( 'Snapshot A', 'sensei-enrollment-comparison-tool' ) . '</th>';
 			echo '<th title="' . esc_attr( $diff->get_b()->get_descriptor() ) . '">' . esc_html__( 'Snapshot B', 'sensei-enrollment-comparison-tool' ) . '</th>';
+			if ( class_exists( 'Sensei_Tool_Enrolment_Debug' ) ) {
+				echo '<th>' . esc_html__( 'Actions', 'sensei-enrollment-comparison-tool' ) . '</th>';
+			}
 			echo '</thead>';
 
 			echo '<tbody>';
@@ -80,6 +83,12 @@ foreach ( $diff->get_notices() as $notice ) {
 					$describe_providers( $data['b_providers' ] );
 				}
 				echo '</td>';
+
+				if ( class_exists( 'Sensei_Tool_Enrolment_Debug' ) ) {
+					$url = \Sensei_Tool_Enrolment_Debug::get_enrolment_debug_url( $user_id, $course->ID );
+					echo '<td><a class="button" href="' . esc_url( $url ) . '">' . esc_html__( 'Debug', 'sensei-enrollment-comparison-tool' ) . '</a></td>';
+				}
+
 				echo '</tr>';
 			}
 

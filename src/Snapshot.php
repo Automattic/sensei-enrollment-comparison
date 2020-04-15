@@ -11,7 +11,7 @@ namespace Sensei\EnrollmentComparisonTool;
  * Snapshot of enrollment results..
  */
 class Snapshot implements \JsonSerializable {
-	const COURSES_PER_QUERY = 5;
+	const COURSES_PER_QUERY    = 5;
 	const CALCULATIONS_PER_RUN = 100;
 
 	/**
@@ -217,7 +217,7 @@ class Snapshot implements \JsonSerializable {
 		$provider_ids = $this->providers[ $course_id ][ $user_id ];
 		$providers    = [];
 		foreach ( $provider_ids as $provider_id ) {
-			$provider_label            = ucwords( str_replace( 'wc-', 'WooCommerce ', $provider_id ) );
+			$provider_label = ucwords( str_replace( 'wc-', 'WooCommerce ', $provider_id ) );
 			if ( class_exists( 'Sensei_Course_Enrolment_Manager' ) ) {
 				$provider = \Sensei_Course_Enrolment_Manager::instance()->get_enrolment_provider_by_id( $provider_id );
 				if ( $provider ) {
