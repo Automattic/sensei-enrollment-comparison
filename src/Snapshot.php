@@ -22,6 +22,13 @@ class Snapshot implements \JsonSerializable {
 	private $id;
 
 	/**
+	 * True if the snapshot is locked.
+	 *
+	 * @var bool
+	 */
+	private $locked = false;
+
+	/**
 	 * Current point in the process of generating snapshot.
 	 *
 	 * @var string
@@ -180,6 +187,7 @@ class Snapshot implements \JsonSerializable {
 			'total_calculations' => isset( $values_raw['total_calculations'] ) ? intval( $values_raw['total_calculations'] ) : null,
 			'done_calculations'  => isset( $values_raw['done_calculations'] ) ? intval( $values_raw['done_calculations'] ) : null,
 			'process_state'      => isset( $values_raw['process_state'] ) ? $values_raw['process_state'] : null,
+			'locked'             => isset( $values_raw['locked'] ) ? $values_raw['locked'] : false,
 		];
 
 		return new self( $values );
@@ -238,6 +246,7 @@ class Snapshot implements \JsonSerializable {
 	public function jsonSerialize() {
 		$attributes = [
 			'id',
+			'locked',
 			'start_time',
 			'end_time',
 			'stage',
@@ -515,5 +524,45 @@ class Snapshot implements \JsonSerializable {
 	 */
 	public function get_process_state() {
 		return $this->process_state;
+	}
+	/**
+	 * Get if the snapshot is locked.
+	 *
+	 * @return bool
+	 */
+	public function is_locked() {
+		return $this->locked;
+	}
+
+	/**
+	 * Lock the snapshot.
+	 */
+	public function lock() {
+		$this->locked = true;
+	}
+
+	/**
+	 * Unlock the snapshot.
+	 */
+	public function unlock() {
+		$this->locked = false;
+	}
+
+	/**
+	 * Get the total calculations.
+	 *
+	 * @return int
+	 */
+	public function get_total_calculations() {
+		return $this->total_calculations;
+	}
+
+	/**
+	 * Get the completed calculations.
+	 *
+	 * @return int
+	 */
+	public function get_done_calculations() {
+		return $this->done_calculations;
 	}
 }

@@ -18,6 +18,7 @@ class Generate {
 	const COURSES_PER_QUERY          = 10;
 	const CALCULATIONS_PER_RUN_PRE_3 = 150;
 	const CALCULATIONS_PER_RUN_3     = 100;
+	const CALCULATIONS_PER_RUN_CLI   = 50;
 
 	use Singleton;
 
@@ -27,6 +28,13 @@ class Generate {
 	 * @var int
 	 */
 	private $current_calculations_left;
+
+	/**
+	 * Active snapshot.
+	 *
+	 * @var Snapshot
+	 */
+	private $active_snapshot;
 
 	/**
 	 * Initializes the hooks.
@@ -47,13 +55,19 @@ class Generate {
 			return;
 		}
 
+		if ( ! defined( 'SENSEI_IS_GENERATE_CLI' ) && $snapshot->is_locked() ) {
+			return;
+		}
+
 		if ( $call_level > 5 ) {
 			$snapshot->set_error( __( 'An unknown error occurred.', 'sensei-enrollment-comparison-tool' ) );
 			$this->end_snapshot( $snapshot );
 			return;
 		}
 
-		if ( ! $this->is_sensei_3() ) {
+		if ( $snapshot->is_locked() ) {
+			$this->current_calculations_left = self::CALCULATIONS_PER_RUN_CLI;
+		} elseif ( ! $this->is_sensei_3() ) {
 			$this->current_calculations_left = self::CALCULATIONS_PER_RUN_PRE_3;
 		} else {
 			$this->current_calculations_left = self::CALCULATIONS_PER_RUN_3;
@@ -63,10 +77,7 @@ class Generate {
 
 		switch ( $snapshot->get_stage() ) {
 			case 'init':
-				$total_courses = \wp_count_posts( 'course' )->publish;
-				$total_users   = \count_users()['total_users'];
-				$snapshot->init( $total_courses, $total_users );
-				$this->update_snapshot( $snapshot );
+				$this->initialize_snapshot( $snapshot );
 				$this->process( $call_level );
 
 				return;
@@ -83,6 +94,18 @@ class Generate {
 		}
 
 		$this->ensure_scheduled_job();
+	}
+
+	/**
+	 * Initialize the snapshot.
+	 *
+	 * @param Snapshot $snapshot
+	 */
+	public function initialize_snapshot( Snapshot $snapshot ) {
+		$total_courses = \wp_count_posts( 'course' )->publish;
+		$total_users   = \count_users()['total_users'];
+		$snapshot->init( $total_courses, $total_users );
+		$this->update_snapshot( $snapshot );
 	}
 
 	/**
@@ -291,6 +314,8 @@ class Generate {
 		Snapshots::store( $snapshot );
 		\delete_option( self::CURRENT_SNAPSHOT_OPTION );
 		\wp_clear_scheduled_hook( self::SCHEDULED_SNAPSHOT_NAME );
+
+		$this->clear_active_snapshot();
 	}
 
 	/**
@@ -302,6 +327,26 @@ class Generate {
 	 */
 	public function update_snapshot( Snapshot $snapshot ) {
 		return \update_option( self::CURRENT_SNAPSHOT_OPTION, \wp_json_encode( $snapshot ) );
+	}
+
+	/**
+	 * Lock a snapshot.
+	 *
+	 * @param Snapshot $snapshot
+	 */
+	public function lock( Snapshot $snapshot ) {
+		$snapshot->lock();
+		$this->update_snapshot( $snapshot );
+	}
+
+	/**
+	 * Lock a snapshot.
+	 *
+	 * @param Snapshot $snapshot
+	 */
+	public function unlock( Snapshot $snapshot ) {
+		$snapshot->unlock();
+		$this->update_snapshot( $snapshot );
 	}
 
 	/**
@@ -317,7 +362,9 @@ class Generate {
 			return false;
 		}
 
-		$result = $this->update_snapshot( Snapshot::start( $friendly_name, $trust_cache ) );
+		$active_snapshot       = Snapshot::start( $friendly_name, $trust_cache );
+		$result                = $this->update_snapshot( $active_snapshot );
+		$this->active_snapshot = $active_snapshot;
 
 		return $result && $this->ensure_scheduled_job();
 	}
@@ -328,17 +375,26 @@ class Generate {
 	 * @return false|Snapshot
 	 */
 	public function get_active_generation() {
-		$current_snapshot = \get_option( self::CURRENT_SNAPSHOT_OPTION );
+		if ( ! isset( $this->active_snapshot ) ) {
+			$current_snapshot = \get_option( self::CURRENT_SNAPSHOT_OPTION );
 
-		if ( $current_snapshot ) {
-			$current_snapshot = Snapshot::from_json( $current_snapshot );
+			if ( $current_snapshot ) {
+				$this->active_snapshot = Snapshot::from_json( $current_snapshot );
+			}
 		}
 
-		if ( empty( $current_snapshot ) || empty( $current_snapshot->get_id() ) ) {
+		if ( empty( $this->active_snapshot ) || empty( $this->active_snapshot->get_id() ) ) {
 			return false;
 		}
 
-		return $current_snapshot;
+		return $this->active_snapshot;
+	}
+
+	/**
+	 * Clear the active snapshot.
+	 */
+	public function clear_active_snapshot() {
+		$this->active_snapshot = null;
 	}
 
 	/**
@@ -347,7 +403,12 @@ class Generate {
 	 * @return bool True if not needed or successful.
 	 */
 	public function ensure_scheduled_job() {
-		if ( ! $this->get_active_generation() ) {
+		$active_snapshot = $this->get_active_generation();
+		if ( ! $active_snapshot ) {
+			return true;
+		}
+
+		if ( $active_snapshot->is_locked() ) {
 			return true;
 		}
 
