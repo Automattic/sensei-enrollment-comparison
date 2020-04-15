@@ -11,6 +11,9 @@ namespace Sensei\EnrollmentComparisonTool;
  * Snapshot of enrollment results..
  */
 class Snapshot implements \JsonSerializable {
+	const COURSES_PER_QUERY = 5;
+	const CALCULATIONS_PER_RUN = 100;
+
 	/**
 	 * Unique ID for snapshot.
 	 *
@@ -96,6 +99,27 @@ class Snapshot implements \JsonSerializable {
 	private $error = false;
 
 	/**
+	 * Get the current process course state.
+	 *
+	 * @var array
+	 */
+	private $process_state;
+
+	/**
+	 * Total calculations.
+	 *
+	 * @var int
+	 */
+	private $total_calculations;
+
+	/**
+	 * Completed calculations.
+	 *
+	 * @var int
+	 */
+	private $done_calculations = 0;
+
+	/**
 	 * Snapshot constructor.
 	 *
 	 * @param array $values
@@ -141,18 +165,21 @@ class Snapshot implements \JsonSerializable {
 		$values_raw = json_decode( $json_string, true );
 
 		$values = [
-			'id'             => isset( $values_raw['id'] ) ? \sanitize_text_field( $values_raw['id'] ) : null,
-			'start_time'     => isset( $values_raw['start_time'] ) ? floatval( $values_raw['start_time'] ) : null,
-			'end_time'       => isset( $values_raw['end_time'] ) ? floatval( $values_raw['end_time'] ) : null,
-			'stage'          => isset( $values_raw['stage'] ) ? \sanitize_text_field( $values_raw['stage'] ) : null,
-			'results'        => isset( $values_raw['results'] ) ? $values_raw['results'] : [],
-			'providers'      => isset( $values_raw['providers'] ) ? $values_raw['providers'] : [],
-			'error'          => isset( $values_raw['error'] ) ? \sanitize_text_field( $values_raw['error'] ) : false,
-			'trust_cache'    => isset( $values_raw['trust_cache'] ) ? boolval( $values_raw['trust_cache'] ) : false,
-			'friendly_name'  => isset( $values_raw['friendly_name'] ) ? \sanitize_text_field( $values_raw['friendly_name'] ) : null,
-			'sensei_version' => isset( $values_raw['sensei_version'] ) ? \sanitize_text_field( $values_raw['sensei_version'] ) : null,
-			'wcpc_version'   => isset( $values_raw['wcpc_version'] ) ? \sanitize_text_field( $values_raw['wcpc_version'] ) : null,
-			'total_courses'  => isset( $values_raw['total_courses'] ) ? intval( $values_raw['total_courses'] ) : null,
+			'id'                 => isset( $values_raw['id'] ) ? \sanitize_text_field( $values_raw['id'] ) : null,
+			'start_time'         => isset( $values_raw['start_time'] ) ? floatval( $values_raw['start_time'] ) : null,
+			'end_time'           => isset( $values_raw['end_time'] ) ? floatval( $values_raw['end_time'] ) : null,
+			'stage'              => isset( $values_raw['stage'] ) ? \sanitize_text_field( $values_raw['stage'] ) : null,
+			'results'            => isset( $values_raw['results'] ) ? $values_raw['results'] : [],
+			'providers'          => isset( $values_raw['providers'] ) ? $values_raw['providers'] : [],
+			'error'              => isset( $values_raw['error'] ) ? \sanitize_text_field( $values_raw['error'] ) : false,
+			'trust_cache'        => isset( $values_raw['trust_cache'] ) ? boolval( $values_raw['trust_cache'] ) : false,
+			'friendly_name'      => isset( $values_raw['friendly_name'] ) ? \sanitize_text_field( $values_raw['friendly_name'] ) : null,
+			'sensei_version'     => isset( $values_raw['sensei_version'] ) ? \sanitize_text_field( $values_raw['sensei_version'] ) : null,
+			'wcpc_version'       => isset( $values_raw['wcpc_version'] ) ? \sanitize_text_field( $values_raw['wcpc_version'] ) : null,
+			'total_courses'      => isset( $values_raw['total_courses'] ) ? intval( $values_raw['total_courses'] ) : null,
+			'total_calculations' => isset( $values_raw['total_calculations'] ) ? intval( $values_raw['total_calculations'] ) : null,
+			'done_calculations'  => isset( $values_raw['done_calculations'] ) ? intval( $values_raw['done_calculations'] ) : null,
+			'process_state'      => isset( $values_raw['process_state'] ) ? $values_raw['process_state'] : null,
 		];
 
 		return new self( $values );
@@ -222,6 +249,9 @@ class Snapshot implements \JsonSerializable {
 			'total_courses',
 			'friendly_name',
 			'trust_cache',
+			'total_calculations',
+			'done_calculations',
+			'process_state',
 		];
 
 		$arr = [];
@@ -236,13 +266,15 @@ class Snapshot implements \JsonSerializable {
 	 * Initialize snapshot.
 	 *
 	 * @param int $total_courses
+	 * @param int $total_users
 	 */
-	public function init( $total_courses = 0 ) {
-		$this->sensei_version = \Sensei()->version;
-		$this->wcpc_version   = defined( 'SENSEI_WC_PAID_COURSES_VERSION' ) ? SENSEI_WC_PAID_COURSES_VERSION : null;
-		$this->stage          = 'process';
-		$this->total_courses  = intval( $total_courses );
-		$this->results        = [];
+	public function init( $total_courses = 0, $total_users = 0 ) {
+		$this->total_calculations = intval( $total_courses ) * intval( $total_users );
+		$this->sensei_version     = \Sensei()->version;
+		$this->wcpc_version       = defined( 'SENSEI_WC_PAID_COURSES_VERSION' ) ? SENSEI_WC_PAID_COURSES_VERSION : null;
+		$this->stage              = 'process';
+		$this->total_courses      = intval( $total_courses );
+		$this->results            = [];
 	}
 
 	/**
@@ -326,14 +358,14 @@ class Snapshot implements \JsonSerializable {
 	 * @return false|float
 	 */
 	public function get_percent_complete() {
-		if ( empty( $this->get_total_courses() ) ) {
+		if ( empty( $this->total_calculations ) ) {
 			return false;
 		}
 		if ( 'end' === $this->stage ) {
 			return 100;
 		}
 
-		return round( ( $this->get_course_offset() / $this->get_total_courses() ) * 100, 1 );
+		return round( ( $this->done_calculations / $this->total_calculations ) * 100, 1 );
 	}
 
 	/**
@@ -460,4 +492,28 @@ class Snapshot implements \JsonSerializable {
 		return $this->results;
 	}
 
+	/**
+	 * Increment the done calculations.
+	 */
+	public function increment_calculations() {
+		$this->done_calculations++;
+	}
+
+	/**
+	 * Set the state of the processor.
+	 *
+	 * @param array $state
+	 */
+	public function set_process_state( $state ) {
+		$this->process_state = $state;
+	}
+
+	/**
+	 * Get the state of the processor.
+	 *
+	 * @return array
+	 */
+	public function get_process_state() {
+		return $this->process_state;
+	}
 }

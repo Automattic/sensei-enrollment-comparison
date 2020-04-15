@@ -16,9 +16,17 @@ class Generate {
 	const PREVIOUS_SNAPSHOT_OPTION   = 'sensei-enrollment-snapshots';
 	const CURRENT_SNAPSHOT_TRANSIENT = 'sensei-enrollment-current-snapshot';
 	const SCHEDULED_SNAPSHOT_NAME    = 'sensei_enrollment_comparison_tool_generate';
-	const COURSES_PER_QUERY          = 5;
+	const COURSES_PER_QUERY          = 10;
+	const CALCULATIONS_PER_RUN       = 100;
 
 	use Singleton;
+
+	/**
+	 * Number of calculations done in this execution.
+	 *
+	 * @var int
+	 */
+	private $current_calculations = 0;
 
 	/**
 	 * Initializes the hooks.
@@ -49,7 +57,9 @@ class Generate {
 
 		switch ( $snapshot->get_stage() ) {
 			case 'init':
-				$snapshot->init( \wp_count_posts( 'course' )->publish );
+				$total_courses = \wp_count_posts( 'course' )->publish;
+				$total_users   = \count_users()['total_users'];
+				$snapshot->init( $total_courses, $total_users );
 				$this->update_snapshot( $snapshot );
 				$this->process( $call_level );
 
@@ -84,7 +94,12 @@ class Generate {
 		$query      = new \WP_Query( $query_args );
 
 		foreach ( $query->get_posts() as $post ) {
-			$student_results = $this->get_student_results( $post->ID, $snapshot->get_trust_cache() );
+			$student_results = $this->get_student_results( $snapshot, $post->ID, $snapshot->get_trust_cache() );
+
+			if ( null === $student_results ) {
+				$this->update_snapshot( $snapshot );
+				return;
+			}
 
 			$snapshot->add_course_student_list( $post->ID, $student_results['students'] );
 			if ( ! empty( $student_results['details'] ) ) {
@@ -101,49 +116,82 @@ class Generate {
 	}
 
 	/**
-	 * Get all the users in the WP instance.
+	 * Get all the user IDs in the WP instance.
 	 *
-	 * @return \WP_User[]
+	 * @return int[]
 	 */
 	private function get_all_users() {
-		static $users;
+		static $user_ids;
 
-		if ( ! isset( $users ) ) {
-			$users = \get_users();
+		if ( ! isset( $user_ids ) ) {
+			$user_ids = \get_users(
+				[
+					'fields' => 'ID',
+				]
+			);
+
+			$user_ids = array_map( 'intval', $user_ids );
+			sort( $user_ids );
 		}
 
-		return $users;
+		return $user_ids;
 	}
 
 	/**
 	 * Get all the students enrolled in a course.
 	 *
-	 * @param int  $course_id
-	 * @param bool $trust_cache
+	 * @param Snapshot $snapshot
+	 * @param int      $course_id
+	 * @param bool     $trust_cache
 	 *
 	 * @return array
 	 */
-	private function get_student_results( $course_id, $trust_cache = false ) {
-		$details  = [];
-		$students = [];
-		foreach ( $this->get_all_users() as $user ) {
-			if ( $this->is_student_enrolled( $course_id, $user->ID, $trust_cache ) ) {
-				$students[] = $user->ID;
+	private function get_student_results( $snapshot, $course_id, $trust_cache = false ) {
+		$state = $snapshot->get_process_state();
+		if (
+			empty( $state )
+			|| empty( $state['course_id'] )
+			|| $state['course_id'] !== $course_id
+		) {
+			$state = [
+				'course_id'      => $course_id,
+				'latest_user_id' => 0,
+				'students'       => [],
+				'details'        => [],
+			];
+		}
+
+		foreach ( $this->get_all_users() as $user_id ) {
+			if ( $user_id <= $state['latest_user_id'] ) {
+				continue;
+			}
+			if ( $this->is_student_enrolled( $course_id, $user_id, $trust_cache ) ) {
+				$state['students'][] = $user_id;
 
 				if ( $this->is_sensei_3() ) {
-					$student_details = $this->get_enrolment_providers( $course_id, $user->ID );
+					$student_details = $this->get_enrolment_providers( $course_id, $user_id );
 					if ( ! empty( $student_details ) ) {
-						$details[ $user->ID ] = $student_details;
+						$state['details'][ $user_id ] = $student_details;
 					}
 				}
 			}
+
+			$state['latest_user_id'] = $user_id;
+			$snapshot->increment_calculations();
+			$snapshot->set_process_state( $state );
+
+			$this->current_calculations++;
+			if ( $this->current_calculations >= self::CALCULATIONS_PER_RUN ) {
+				return null;
+			}
 		}
 
-		sort( $students );
+		$snapshot->set_process_state( null );
+		sort( $state['students'] );
 
 		return [
-			'students' => $students,
-			'details'  => $details,
+			'students' => $state['students'],
+			'details'  => $state['details'],
 		];
 	}
 
