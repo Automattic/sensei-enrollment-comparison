@@ -13,20 +13,20 @@ use Sensei\EnrollmentComparisonTool\Traits\Singleton;
  * Generating the snapshot files.
  */
 class Generate {
-	const PREVIOUS_SNAPSHOT_OPTION   = 'sensei-enrollment-snapshots';
-	const CURRENT_SNAPSHOT_TRANSIENT = 'sensei-enrollment-current-snapshot';
+	const CURRENT_SNAPSHOT_OPTION    = 'sensei-enrollment-current-snapshot';
 	const SCHEDULED_SNAPSHOT_NAME    = 'sensei_enrollment_comparison_tool_generate';
 	const COURSES_PER_QUERY          = 10;
-	const CALCULATIONS_PER_RUN       = 100;
+	const CALCULATIONS_PER_RUN_PRE_3 = 150;
+	const CALCULATIONS_PER_RUN_3     = 100;
 
 	use Singleton;
 
 	/**
-	 * Number of calculations done in this execution.
+	 * Number of calculations left in this execution.
 	 *
 	 * @var int
 	 */
-	private $current_calculations = 0;
+	private $current_calculations_left;
 
 	/**
 	 * Initializes the hooks.
@@ -51,6 +51,12 @@ class Generate {
 			$snapshot->set_error( __( 'An unknown error occurred.', 'sensei-enrollment-comparison-tool' ) );
 			$this->end_snapshot( $snapshot );
 			return;
+		}
+
+		if ( ! $this->is_sensei_3() ) {
+			$this->current_calculations_left = self::CALCULATIONS_PER_RUN_PRE_3;
+		} else {
+			$this->current_calculations_left = self::CALCULATIONS_PER_RUN_3;
 		}
 
 		$call_level++;
@@ -85,6 +91,8 @@ class Generate {
 	 * @param Snapshot $snapshot
 	 */
 	private function process_snapshot( Snapshot $snapshot ) {
+		$this->current_snapshot = $snapshot;
+
 		$query_args = [
 			'post_type'      => 'course',
 			'post_status'    => 'publish',
@@ -98,6 +106,7 @@ class Generate {
 
 			if ( null === $student_results ) {
 				$this->update_snapshot( $snapshot );
+
 				return;
 			}
 
@@ -142,12 +151,13 @@ class Generate {
 	 *
 	 * @param Snapshot $snapshot
 	 * @param int      $course_id
-	 * @param bool     $trust_cache
 	 *
 	 * @return array
 	 */
-	private function get_student_results( $snapshot, $course_id, $trust_cache = false ) {
-		$state = $snapshot->get_process_state();
+	private function get_student_results( $snapshot, $course_id ) {
+		$state       = $snapshot->get_process_state();
+		$trust_cache = $snapshot->get_trust_cache();
+
 		if (
 			empty( $state )
 			|| empty( $state['course_id'] )
@@ -180,8 +190,8 @@ class Generate {
 			$snapshot->increment_calculations();
 			$snapshot->set_process_state( $state );
 
-			$this->current_calculations++;
-			if ( $this->current_calculations >= self::CALCULATIONS_PER_RUN ) {
+			$this->current_calculations_left--;
+			if ( $this->current_calculations_left <= 0 ) {
 				return null;
 			}
 		}
@@ -279,7 +289,7 @@ class Generate {
 		$snapshots[ $snapshot->get_id() ] = $snapshot;
 
 		Snapshots::store( $snapshot );
-		\delete_transient( self::CURRENT_SNAPSHOT_TRANSIENT );
+		\delete_option( self::CURRENT_SNAPSHOT_OPTION );
 		\wp_clear_scheduled_hook( self::SCHEDULED_SNAPSHOT_NAME );
 	}
 
@@ -291,7 +301,7 @@ class Generate {
 	 * @return bool
 	 */
 	public function update_snapshot( Snapshot $snapshot ) {
-		return \set_transient( self::CURRENT_SNAPSHOT_TRANSIENT, \wp_json_encode( $snapshot ) );
+		return \update_option( self::CURRENT_SNAPSHOT_OPTION, \wp_json_encode( $snapshot ) );
 	}
 
 	/**
@@ -307,9 +317,9 @@ class Generate {
 			return false;
 		}
 
-		$transient_result = $this->update_snapshot( Snapshot::start( $friendly_name, $trust_cache ) );
+		$result = $this->update_snapshot( Snapshot::start( $friendly_name, $trust_cache ) );
 
-		return $transient_result && $this->ensure_scheduled_job();
+		return $result && $this->ensure_scheduled_job();
 	}
 
 	/**
@@ -318,7 +328,7 @@ class Generate {
 	 * @return false|Snapshot
 	 */
 	public function get_active_generation() {
-		$current_snapshot = \get_transient( self::CURRENT_SNAPSHOT_TRANSIENT );
+		$current_snapshot = \get_option( self::CURRENT_SNAPSHOT_OPTION );
 
 		if ( $current_snapshot ) {
 			$current_snapshot = Snapshot::from_json( $current_snapshot );
