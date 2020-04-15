@@ -62,6 +62,8 @@ class Process {
 			$diff_tick = $next_tick - $last_tick;
 			$progress->tick( $diff_tick );
 			$last_tick = $next_tick;
+
+			do_action( 'sensei_course_enrollment_comparison_cli_loop' );
 		}
 
 		$progress->finish();
