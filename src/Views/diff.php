@@ -42,14 +42,12 @@ foreach ( $diff->get_notices() as $notice ) {
 			if ( ! $course_diff['same'] ) {
 				echo '<div class="notice inline error"><p><strong>' . esc_html__( 'Course enrollment differs between the two snapshots.', 'sensei-enrollment-comparison-tool' ) . '</strong></p></div>';
 			}
-			echo '<table class="wp-list-table widefat fixed striped" style="max-width: 40rem;">';
+			echo '<table class="wp-list-table widefat fixed striped" style="max-width: 60rem;">';
 			echo '<thead>';
 			echo '<th>' . esc_html__( 'Student', 'sensei-enrollment-comparison-tool' ) . '</th>';
 			echo '<th title="' . esc_attr( $diff->get_a()->get_descriptor() ) . '">' . esc_html__( 'Snapshot A', 'sensei-enrollment-comparison-tool' ) . '</th>';
 			echo '<th title="' . esc_attr( $diff->get_b()->get_descriptor() ) . '">' . esc_html__( 'Snapshot B', 'sensei-enrollment-comparison-tool' ) . '</th>';
-			if ( class_exists( 'Sensei_Tool_Enrolment_Debug' ) ) {
-				echo '<th>' . esc_html__( 'Actions', 'sensei-enrollment-comparison-tool' ) . '</th>';
-			}
+			echo '<th>' . esc_html__( 'Actions', 'sensei-enrollment-comparison-tool' ) . '</th>';
 			echo '</thead>';
 
 			echo '<tbody>';
@@ -84,10 +82,21 @@ foreach ( $diff->get_notices() as $notice ) {
 				}
 				echo '</td>';
 
+				echo '<td>';
 				if ( class_exists( 'Sensei_Tool_Enrolment_Debug' ) ) {
 					$url = \Sensei_Tool_Enrolment_Debug::get_enrolment_debug_url( $user_id, $course->ID );
-					echo '<td><a class="button" href="' . esc_url( $url ) . '">' . esc_html__( 'Debug', 'sensei-enrollment-comparison-tool' ) . '</a></td>';
+					echo '<a class="button" href="' . esc_url( $url ) . '">' . esc_html__( 'Debug', 'sensei-enrollment-comparison-tool' ) . '</a>';
 				}
+				if ( class_exists( 'user_switching' ) ) {
+					$url = user_switching::maybe_switch_url( get_user_by( 'ID', $user_id ) );
+					if ( $url ) {
+						$url = add_query_arg( array(
+							'redirect_to' => urlencode( get_permalink( $course->ID ) ),
+						), $url );
+						echo ' <a class="button" target="_blank" href="' . esc_url( $url ) . '">' . esc_html__( 'View as User', 'sensei-enrollment-comparison-tool' ) . '</a>';
+					}
+				}
+				echo '</td>';
 
 				echo '</tr>';
 			}
