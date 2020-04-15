@@ -16,8 +16,8 @@ class Generate {
 	const CURRENT_SNAPSHOT_OPTION    = 'sensei-enrollment-current-snapshot';
 	const SCHEDULED_SNAPSHOT_NAME    = 'sensei_enrollment_comparison_tool_generate';
 	const COURSES_PER_QUERY          = 10;
-	const CALCULATIONS_PER_RUN_PRE_3 = 150;
-	const CALCULATIONS_PER_RUN_3     = 100;
+	const CALCULATIONS_PER_RUN_PRE_3 = 50;
+	const CALCULATIONS_PER_RUN_3     = 25;
 	const CALCULATIONS_PER_RUN_CLI   = 50;
 
 	use Singleton;
