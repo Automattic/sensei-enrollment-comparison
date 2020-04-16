@@ -1,0 +1,33 @@
+{
+  "name": "sensei-enrollment-comparison-tool",
+  "version": "1.0.0",
+  "description": "Sensei LMS Enrolkment Comparison Tool",
+  "author": "Automattic",
+  "license": "GPL-2.0-or-later",
+  "keywords": [
+    "wordpress-plugin"
+  ],
+  "homepage": "https://github.com/Automattic/sensei-enrollment-comparison#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Automattic/sensei-enrollment-comparison.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Automattic/sensei-enrollment-comparison/issues"
+  },
+  "main": "gulpfile.js",
+  "devDependencies": {
+    "del": "5.1.0",
+    "gulp": "4.0.2",
+    "gulp-checktextdomain": "2.2.1",
+    "gulp-chmod": "3.0.0",
+    "gulp-sort": "2.0.0",
+    "gulp-wp-pot": "2.3.6",
+    "gulp-zip": "5.0.1"
+  },
+  "scripts": {
+    "build": "gulp",
+    "lint-css": "wp-scripts lint-style **/*.scss",
+    "lint-css:fix": "npm run lint-css -- --fix"
+  }
+}
