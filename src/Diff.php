@@ -33,6 +33,13 @@ class Diff {
 	private $b;
 
 	/**
+	 * Only show differing enrolments.
+	 *
+	 * @var bool
+	 */
+	private $diff_only = false;
+
+	/**
 	 * All courses in two snapshots.
 	 *
 	 * @var WP_Post[]
@@ -51,10 +58,12 @@ class Diff {
 	 *
 	 * @param Snapshot $a
 	 * @param Snapshot $b
+	 * @param bool     $diff_only
 	 */
-	public function __construct( Snapshot $a, Snapshot $b ) {
-		$this->a = $a;
-		$this->b = $b;
+	public function __construct( Snapshot $a, Snapshot $b, $diff_only = false ) {
+		$this->a         = $a;
+		$this->b         = $b;
+		$this->diff_only = $diff_only;
 
 		$this->get_courses();
 
@@ -99,11 +108,18 @@ class Diff {
 		}
 		$same = true;
 		foreach ( $course_users as $user_id => $user_label ) {
+			$a_enrolled = $this->a->is_enrolled( $course_id, $user_id );
+			$b_enrolled = $this->b->is_enrolled( $course_id, $user_id );
+
+			if ( $this->diff_only && $a_enrolled === $b_enrolled ) {
+				continue;
+			}
+
 			$enrollment[ $user_id ]         = [
 				'label'       => $user_label,
-				'a'           => $this->a->is_enrolled( $course_id, $user_id ),
+				'a'           => $a_enrolled,
 				'a_providers' => $this->a->get_enrolling_providers( $course_id, $user_id ),
-				'b'           => $this->b->is_enrolled( $course_id, $user_id ),
+				'b'           => $b_enrolled,
 				'b_providers' => $this->b->get_enrolling_providers( $course_id, $user_id ),
 			];
 			$enrollment[ $user_id ]['same'] = $enrollment[ $user_id ]['a'] === $enrollment[ $user_id ]['b'];
@@ -229,5 +245,14 @@ class Diff {
 	 */
 	public function get_notices() {
 		return $this->notices;
+	}
+
+	/**
+	 * Get the value of the difference only flag.
+	 *
+	 * @return bool
+	 */
+	public function get_diff_only() {
+		return $this->diff_only;
 	}
 }

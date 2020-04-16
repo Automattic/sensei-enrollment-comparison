@@ -87,19 +87,21 @@ class Admin {
 			switch ( $_REQUEST['sensei-enrollment-comp-action'] ) {
 				case 'compare':
 					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Don't touch the nonce.
-					if ( ! isset( $_POST['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_POST['_wpnonce'] ), 'sensei-compare-snapshots' ) ) {
+					if ( ! isset( $_GET['_wpnonce'] ) || ! \wp_verify_nonce( \wp_unslash( $_GET['_wpnonce'] ), 'sensei-compare-snapshots' ) ) {
 						die( 'Invalid nonce.' );
 					}
 
-					if ( ! empty( $_POST['snapshot_a'] ) && ! empty( $_POST['snapshot_b'] ) ) {
-						$snapshot_a = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_POST['snapshot_a'] ) ) );
-						$snapshot_b = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_POST['snapshot_b'] ) ) );
+					if ( ! empty( $_GET['snapshot_a'] ) && ! empty( $_GET['snapshot_b'] ) ) {
+						$snapshot_a = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_GET['snapshot_a'] ) ) );
+						$snapshot_b = Snapshots::get_snapshot( sanitize_text_field( wp_unslash( $_GET['snapshot_b'] ) ) );
 					}
+
+					$diff_only = ! empty( $_GET['diff_only'] );
 
 					if ( empty( $snapshot_a ) || empty( $snapshot_b ) ) {
 						echo '<div class="notice inline notice-error"><p>' . \esc_html__( 'Unable to find at least one of the selected snapshots.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
 					} else {
-						$diff = new Diff( $snapshot_a, $snapshot_b );
+						$diff = new Diff( $snapshot_a, $snapshot_b, $diff_only );
 						include __DIR__ . '/Views/diff.php';
 
 						return;

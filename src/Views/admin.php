@@ -49,7 +49,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<fieldset>
 					<p>
 						<input type="checkbox" id="trust_cache" name="trust_cache" />
-						<label for="trust_cache"><?php esc_html_e( 'Trust Enrollment Cache', 'sensei-enrollment-comparison-tool' ); ?></label>
+						<label for="trust_cache"><?php esc_html_e( 'Trust enrollment cache', 'sensei-enrollment-comparison-tool' ); ?></label>
 					</p>
 				</fieldset>
 			<?php
@@ -65,10 +65,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	if ( ! empty( $snapshots ) ) {
 		?>
 		<h2><?php esc_html_e( 'Compare Snapshots', 'sensei-enrollment-comparison-tool' ); ?></h2>
-		<form id="compare-snapshots-form" method="post" name="compare-snapshots">
+		<form id="compare-snapshots-form" method="get" name="compare-snapshots">
+			<input type="hidden" name="page" value="enrollment-comparison">
 			<input type="hidden" name="sensei-enrollment-comp-action" value="compare">
 			<?php
-			\wp_nonce_field( 'sensei-compare-snapshots' );
+			\wp_nonce_field( 'sensei-compare-snapshots', '_wpnonce', false );
 			?>
 			<fieldset>
 				<p>
@@ -102,6 +103,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						}
 						?>
 					</select>
+				</p>
+			</fieldset>
+			<fieldset>
+				<p>
+					<input type="checkbox" id="diff_only" name="diff_only" value="1" />
+					<label for="diff_only"><?php esc_html_e( 'Only list differences', 'sensei-enrollment-comparison-tool' ); ?></label>
 				</p>
 			</fieldset>
 			<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary"

@@ -37,7 +37,11 @@ foreach ( $diff->get_notices() as $notice ) {
 		$course_diff = $diff->get_enrollment_diff( $course->ID );
 		echo '<h2>' . $course->post_title . '</h2>';
 		if ( empty( $course_diff['enrollment'] ) ) {
-			echo '<div class="notice inline notice-info"><p>' . esc_html__( 'No students enrolled in either snapshot.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
+			if ( $diff->get_diff_only() ) {
+				echo '<div class="notice inline notice-info"><p>' . esc_html__( 'There were no differences between the snapshots.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
+			} else {
+				echo '<div class="notice inline notice-info"><p>' . esc_html__( 'No students enrolled in either snapshot.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
+			}
 		} else {
 			if ( ! $course_diff['same'] ) {
 				echo '<div class="notice inline error"><p><strong>' . esc_html__( 'Course enrollment differs between the two snapshots.', 'sensei-enrollment-comparison-tool' ) . '</strong></p></div>';
