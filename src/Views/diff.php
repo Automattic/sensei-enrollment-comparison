@@ -74,7 +74,7 @@ foreach ( $diff->get_notices() as $notice ) {
 					$describe_providers( $data['a_providers' ] );
 				}
 				if ( ! empty( $data['a_notes'] ) ) {
-					echo '<div class="notes">' . esc_html( $data['a_notes'] ) . '</div>';
+					echo '<div class="notes">' . esc_html( implode( '; ', $data['a_notes'] ) ) . '</div>';
 				}
 				echo '</td>';
 
@@ -88,7 +88,7 @@ foreach ( $diff->get_notices() as $notice ) {
 					$describe_providers( $data['b_providers' ] );
 				}
 				if ( ! empty( $data['b_notes'] ) ) {
-					echo '<div class="notes">' . esc_html( $data['b_notes'] ) . '</div>';
+					echo '<div class="notes">' . esc_html( implode( '; ', $data['b_notes'] ) ) . '</div>';
 				}
 				echo '</td>';
 
