@@ -219,13 +219,13 @@ class Generate {
 			/**
 			 * Add a note to an enrollment snapshot.
 			 *
-			 * @param string|null $note        Note to filter.
-			 * @param int         $user_id     User ID.
-			 * @param int         $course_id   Course post ID.
-			 * @param bool        $is_enrolled If they are enrolled.
+			 * @param string[] $note        Note to filter.
+			 * @param int      $user_id     User ID.
+			 * @param int      $course_id   Course post ID.
+			 * @param bool     $is_enrolled If they are enrolled.
 			 */
-			$note = apply_filters( 'sensei_enrollment_comparison_tool_enrollment_note', null, $user_id, $course_id, $is_enrolled );
-			if ( $note ) {
+			$note = apply_filters( 'sensei_enrollment_comparison_tool_enrollment_note', [], $user_id, $course_id, $is_enrolled );
+			if ( ! empty( $note ) ) {
 				$state['notes'][ $user_id ] = $note;
 			}
 
