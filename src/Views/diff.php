@@ -43,8 +43,8 @@ foreach ( $diff->get_notices() as $notice ) {
 				echo '<div class="notice inline notice-info"><p>' . esc_html__( 'No students enrolled in either snapshot.', 'sensei-enrollment-comparison-tool' ) . '</p></div>';
 			}
 		} else {
-			if ( ! $course_diff['same'] ) {
-				echo '<div class="notice inline error"><p><strong>' . esc_html__( 'Course enrollment differs between the two snapshots.', 'sensei-enrollment-comparison-tool' ) . '</strong></p></div>';
+			if ( ! empty( $course_diff['diff_count'] ) ) {
+				echo '<div class="notice inline error"><p><strong>' . sprintf( esc_html__( 'Course enrollment differs between the two snapshots (%s differences).', 'sensei-enrollment-comparison-tool' ), $course_diff['diff_count'] ) . '</strong></p></div>';
 			}
 			echo '<table class="wp-list-table widefat fixed striped" style="max-width: 60rem;">';
 			echo '<thead>';

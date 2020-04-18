@@ -106,7 +106,7 @@ class Diff {
 			$course_label = $courses[ $course_id ]->post_title;
 			$course_link  = get_permalink( $course_id );
 		}
-		$same = true;
+		$diff_count = 0;
 		foreach ( $course_users as $user_id => $user_label ) {
 			$a_enrolled = $this->a->is_enrolled( $course_id, $user_id );
 			$b_enrolled = $this->b->is_enrolled( $course_id, $user_id );
@@ -124,14 +124,14 @@ class Diff {
 			];
 			$enrollment[ $user_id ]['same'] = $enrollment[ $user_id ]['a'] === $enrollment[ $user_id ]['b'];
 			if ( ! $enrollment[ $user_id ]['same'] ) {
-				$same = false;
+				$diff_count++;
 			}
 		}
 
 		return [
 			'course_label' => $course_label,
 			'course_link'  => $course_link,
-			'same'         => $same,
+			'diff_count'   => $diff_count,
 			'enrollment'   => $enrollment,
 		];
 	}
