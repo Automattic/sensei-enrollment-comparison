@@ -119,8 +119,10 @@ class Diff {
 				'label'       => $user_label,
 				'a'           => $a_enrolled,
 				'a_providers' => $this->a->get_enrolling_providers( $course_id, $user_id ),
+				'a_notes'     => $this->a->get_notes( $course_id, $user_id ),
 				'b'           => $b_enrolled,
 				'b_providers' => $this->b->get_enrolling_providers( $course_id, $user_id ),
+				'b_notes'     => $this->b->get_notes( $course_id, $user_id ),
 			];
 			$enrollment[ $user_id ]['same'] = $enrollment[ $user_id ]['a'] === $enrollment[ $user_id ]['b'];
 			if ( ! $enrollment[ $user_id ]['same'] ) {

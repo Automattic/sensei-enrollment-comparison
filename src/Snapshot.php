@@ -92,6 +92,13 @@ class Snapshot implements \JsonSerializable {
 	private $results = [];
 
 	/**
+	 * Provider notes.
+	 *
+	 * @var array
+	 */
+	private $notes = [];
+
+	/**
 	 * Provider details.
 	 *
 	 * @var array
@@ -178,6 +185,7 @@ class Snapshot implements \JsonSerializable {
 			'stage'              => isset( $values_raw['stage'] ) ? \sanitize_text_field( $values_raw['stage'] ) : null,
 			'results'            => isset( $values_raw['results'] ) ? $values_raw['results'] : [],
 			'providers'          => isset( $values_raw['providers'] ) ? $values_raw['providers'] : [],
+			'notes'              => isset( $values_raw['notes'] ) ? $values_raw['notes'] : [],
 			'error'              => isset( $values_raw['error'] ) ? \sanitize_text_field( $values_raw['error'] ) : false,
 			'trust_cache'        => isset( $values_raw['trust_cache'] ) ? boolval( $values_raw['trust_cache'] ) : false,
 			'friendly_name'      => isset( $values_raw['friendly_name'] ) ? \sanitize_text_field( $values_raw['friendly_name'] ) : null,
@@ -207,6 +215,22 @@ class Snapshot implements \JsonSerializable {
 		}
 
 		return in_array( $user_id, $this->results[ $course_id ], true );
+	}
+
+	/**
+	 * Get any notes provided in a snapshot.
+	 *
+	 * @param int $course_id
+	 * @param int $user_id
+	 *
+	 * @return string
+	 */
+	public function get_notes( $course_id, $user_id ) {
+		if ( ! isset( $this->notes[ $course_id ] ) || ! isset( $this->notes[ $course_id ][ $user_id ] ) ) {
+			return false;
+		}
+
+		return $this->notes[ $course_id ][ $user_id ];
 	}
 
 	/**
@@ -252,6 +276,7 @@ class Snapshot implements \JsonSerializable {
 			'stage',
 			'results',
 			'providers',
+			'notes',
 			'error',
 			'sensei_version',
 			'wcpc_version',
@@ -395,6 +420,16 @@ class Snapshot implements \JsonSerializable {
 	 */
 	public function add_course_providing_details( $course_id, $providers ) {
 		$this->providers[ $course_id ] = $providers;
+	}
+
+	/**
+	 * Add the notes.
+	 *
+	 * @param int      $course_id
+	 * @param string[] $notes
+	 */
+	public function add_notes( $course_id, $notes ) {
+		$this->notes[ $course_id ] = $notes;
 	}
 
 	/**

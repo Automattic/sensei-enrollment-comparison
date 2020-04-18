@@ -137,6 +137,10 @@ class Generate {
 			if ( ! empty( $student_results['details'] ) ) {
 				$snapshot->add_course_providing_details( $post->ID, $student_results['details'] );
 			}
+
+			if ( ! empty( $student_results['notes'] ) ) {
+				$snapshot->add_notes( $post->ID, $student_results['notes'] );
+			}
 		}
 
 		if ( empty( $query->post_count ) || $snapshot->get_course_offset() >= $snapshot->get_total_courses() ) {
@@ -191,6 +195,7 @@ class Generate {
 				'latest_user_id' => 0,
 				'students'       => [],
 				'details'        => [],
+				'notes'          => [],
 			];
 		}
 
@@ -198,7 +203,9 @@ class Generate {
 			if ( $user_id <= $state['latest_user_id'] ) {
 				continue;
 			}
-			if ( $this->is_student_enrolled( $course_id, $user_id, $trust_cache ) ) {
+
+			$is_enrolled = $this->is_student_enrolled( $course_id, $user_id, $trust_cache );
+			if ( $is_enrolled ) {
 				$state['students'][] = $user_id;
 
 				if ( $this->is_sensei_3() ) {
@@ -207,6 +214,19 @@ class Generate {
 						$state['details'][ $user_id ] = $student_details;
 					}
 				}
+			}
+
+			/**
+			 * Add a note to an enrollment snapshot.
+			 *
+			 * @param string|null $note        Note to filter.
+			 * @param int         $user_id     User ID.
+			 * @param int         $course_id   Course post ID.
+			 * @param bool        $is_enrolled If they are enrolled.
+			 */
+			$note = apply_filters( 'sensei_enrollment_comparison_tool_enrollment_note', null, $user_id, $course_id, $is_enrolled );
+			if ( $note ) {
+				$state['notes'][ $user_id ] = $note;
 			}
 
 			$state['latest_user_id'] = $user_id;
@@ -225,6 +245,7 @@ class Generate {
 		return [
 			'students' => $state['students'],
 			'details'  => $state['details'],
+			'notes'    => $state['notes'],
 		];
 	}
 
