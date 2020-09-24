@@ -78,7 +78,8 @@ foreach ( $diff->get_notices() as $notice ) {
 				}
 				echo '</td>';
 
-				echo '<td style="' . esc_attr( $row_style ) . '">';
+				echo '<td>';
+				echo '<div style="' . esc_attr( $row_style ) . '">';
 				if ( $data['b'] ) {
 					echo esc_html__( 'Enrolled', 'sensei-enrollment-comparison-tool' );
 				} else {
@@ -87,6 +88,8 @@ foreach ( $diff->get_notices() as $notice ) {
 				if ( isset( $data['b_providers'] ) ) {
 					$describe_providers( $data['b_providers' ] );
 				}
+				echo '</div>';
+
 				if ( ! empty( $data['b_notes'] ) ) {
 					echo '<div class="notes">' . esc_html( implode( '; ', $data['b_notes'] ) ) . '</div>';
 				}

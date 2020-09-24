@@ -224,9 +224,9 @@ class Generate {
 			 * @param int      $course_id   Course post ID.
 			 * @param bool     $is_enrolled If they are enrolled.
 			 */
-			$note = apply_filters( 'sensei_enrollment_comparison_tool_enrollment_note', [], $user_id, $course_id, $is_enrolled );
-			if ( ! empty( $note ) ) {
-				$state['notes'][ $user_id ] = $note;
+			$notes = apply_filters( 'sensei_enrollment_comparison_tool_enrollment_notes', [], $user_id, $course_id, $is_enrolled );
+			if ( ! empty( $notes ) ) {
+				$state['notes'][ $user_id ] = $notes;
 			}
 
 			$state['latest_user_id'] = $user_id;
