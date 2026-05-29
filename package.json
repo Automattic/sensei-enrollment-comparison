@@ -25,6 +25,9 @@
     "gulp-wp-pot": "2.3.6",
     "gulp-zip": "5.0.1"
   },
+  "overrides": {
+    "braces": "3.0.3"
+  },
   "scripts": {
     "build": "gulp",
     "lint-css": "wp-scripts lint-style **/*.scss",
